@@ -1,7 +1,7 @@
 /*
  * @Author: duapple
  * @Date: 2021-11-17 21:42:40
- * @LastEditTime: 2021-11-19 00:33:09
+ * @LastEditTime: 2021-11-19 10:39:35
  * @LastEditors: duapple
  * @Description: Add description
  * 
@@ -25,8 +25,7 @@
  */
 bool strsIsSpace(const char ch)
 {
-    if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r')
-    {
+    if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
         return true;
     }
     return false;
@@ -37,9 +36,25 @@ bool strsIsSpace(const char ch)
  * @param {size_t} size
  * @return {*}
  */
-void *strsloc(size_t size)
+char *strsloc(size_t size)
 {
-    return calloc(size, sizeof(char));
+    return (char *)calloc(size, sizeof(char));
+}
+
+/**
+ * @description: 为字符串列表分配空间，需要strsFree2()释放
+ * @param {char} *
+ * @param {int} row
+ * @param {int} col
+ * @return {*}
+ */
+char **strsloc2(int row, int col)
+{
+    char **strList = calloc(row, sizeof(char *));
+    for (int i = 0; i < row; i++) {
+        strList[i] = calloc(col, sizeof(char));
+    }
+    return strList;
 }
 
 /**
@@ -69,16 +84,16 @@ bool strsIsEnd(const char ch)
  * @param {char} *str
  * @return {*}
  */
-void strsReverse(char *str)
+char *strsReverse(char *str)
 {
     size_t size = strsLen(str);
-    char *buff = strsloc(size);
-    for (int i = 0, max = strlen(str), j = max - 1; i < max; i++, j--)
-    {  
+    char * buff = strsloc(size);
+    for (int i = 0, max = strlen(str), j = max - 1; i < max; i++, j--) {
         buff[j] = str[i];
     }
     memcpy(str, buff, size);
     strsFree(buff);
+    return str;
 }
 
 /**
@@ -92,20 +107,15 @@ int strsNum(const char *str)
     int    index  = 0;
     int    offset = 0;
     int    num    = 0;
-    for (int i = 0; i < strLen + 1; i++)
-    {
-        if (strsIsSpace(str[i]) || strsIsEnd(str[i]))
-        {
-            if (offset > index)
-            {
+    for (int i = 0; i < strLen + 1; i++) {
+        if (strsIsSpace(str[i]) || strsIsEnd(str[i])) {
+            if (offset > index) {
                 num++;
             }
             index = offset;
             index++;
             offset++;
-        }
-        else
-        {
+        } else {
             offset++;
         }
     }
@@ -144,13 +154,13 @@ void strsFree(void *str)
  * @param {char} *str
  * @return {*}
  */
-void strsToupper(char *str)
+char *strsToupper(char *str)
 {
     size_t strLen = strlen(str);
-    for (int i = 0; i < strLen; i++)
-    {
+    for (int i = 0; i < strLen; i++) {
         str[i] = toupper(str[i]);
     }
+    return str;
 }
 
 /**
@@ -158,13 +168,13 @@ void strsToupper(char *str)
  * @param {char} *str
  * @return {*}
  */
-void strsTolower(char *str)
+char *strsTolower(char *str)
 {
     size_t strLen = strlen(str);
-    for (int i = 0; i < strLen; i++)
-    {
+    for (int i = 0; i < strLen; i++) {
         str[i] = tolower(str[i]);
     }
+    return str;
 }
 
 /**
@@ -179,11 +189,9 @@ int strsCount(const char *str, const char *substr)
     size_t strLen    = strlen(str);
     size_t substrLen = strlen(substr);
     int    count     = 0;
-    for (; offset < strLen;)
-    {
+    for (; offset < strLen;) {
         char *strIndex = strstr(str + offset, substr);
-        if (strIndex == NULL)
-        {
+        if (strIndex == NULL) {
             break;
         }
         count++;
@@ -199,36 +207,33 @@ int strsCount(const char *str, const char *substr)
  * @param {int} *listSize
  * @return {*}
  */
-int strsFields(const char *str, char **strList, int *listSize)
+int strsFields(const char *str, char ***strList, int *listSize)
 {
     int num         = strsNum(str);
-    strList         = malloc(sizeof(char *) * num);
+    *strList        = calloc(num, sizeof(char *));
     int    index    = 0;
     int    offset   = 0;
     size_t buffSize = strsLen(str);
-    char * buff     = calloc(buffSize, sizeof(char));
-    if (buff == NULL)
-    {
+    char * buff     = strsloc(buffSize);
+    if (buff == NULL) {
         LOG_ERROR("calloc failed");
+        return -1;
     }
-    for (int i = 0; i < buffSize; i++)
-    {
-        if (strsIsSpace(str[i]) || strsIsEnd(str[i]))
-        {
-            if (offset > index)
-            {
+    *listSize = num;
+    for (int i = 0, j = 0; i < buffSize && j < num; i++) {
+        if (strsIsSpace(str[i]) || strsIsEnd(str[i])) {
+            if (offset > index) {
                 sscanf(str + index, "%s", buff);
-                int strSize = strsLen(buff);
-                strList[i]  = strsloc(strSize);
-                memcpy(strList[i], buff, strSize);
+                int strSize   = strsLen(buff);
+                (*strList)[j] = strsloc(strSize);
+                memcpy((*strList)[j], buff, strSize);
                 memset(buff, 0, buffSize);
-                LOG_INFO("%s", strList[i]);
+                j++;
             }
             index = offset;
             index++;
             offset++;
-        }
-        else
+        } else
             offset++;
     }
     return 0;
@@ -242,8 +247,7 @@ int strsFields(const char *str, char **strList, int *listSize)
  */
 void strsFree2(char **strList, int listSize)
 {
-    for (int i = 0; i < listSize; i++)
-    {
+    for (int i = 0; i < listSize; i++) {
         strsFree(strList[i]);
     }
     strsFree(strList);
@@ -261,10 +265,8 @@ bool strsHasPrefix(const char *str, const char *prefix)
     if (size == 0)
         return true;
 
-    for (int i = 0; i < size; i++)
-    {
-        if (str[i] != prefix[i])
-        {
+    for (int i = 0; i < size; i++) {
+        if (str[i] != prefix[i]) {
             return false;
         }
     }
@@ -281,14 +283,11 @@ bool strsHasSuffix(const char *str, const char *suffix)
 {
     size_t size1 = strlen(suffix);
     size_t size2 = strlen(str);
-    if (size1 == 0)
-    {
+    if (size1 == 0) {
         return true;
     }
-    for (int i = 0, k = size1 - 1, j = size2 - 1; i < size1; i++, j--, k--)
-    {
-        if (str[j] != suffix[k])
-        {
+    for (int i = 0, k = size1 - 1, j = size2 - 1; i < size1; i++, j--, k--) {
+        if (str[j] != suffix[k]) {
             return false;
         }
     }
@@ -304,8 +303,7 @@ bool strsHasSuffix(const char *str, const char *suffix)
 int strsIndex(const char *str, const char *substr)
 {
     char *pos = strstr(str, substr);
-    if (pos == NULL)
-    {
+    if (pos == NULL) {
         return -1;
     }
     return pos - str;
@@ -339,19 +337,16 @@ char *strsJoinN(const char *sep, int num, ...)
     size_t  size = 0;
     va_list arg;
     va_start(arg, num);
-    for (int i = 0; i < num - 1; i++)
-    {
+    for (int i = 0; i < num - 1; i++) {
         size += strlen(va_arg(arg, char *));
     }
     va_end(arg);
 
     char *dst = strsloc(size + 1);
     va_start(arg, num);
-    for (int i = 0; i < num; i++)
-    {
+    for (int i = 0; i < num; i++) {
         strcat(dst, va_arg(arg, char *));
-        if (i != num - 1)
-        {
+        if (i != num - 1) {
             strcat(dst, sep);
         }
     }
@@ -372,8 +367,7 @@ int strsLastIndex(const char *str, const char *substr)
     int    pos    = -1;
     size_t size   = strlen(substr);
     index         = strsIndex(str, substr);
-    for (; index >= 0; index = strsIndex(str + offset, substr))
-    {
+    for (; index >= 0; index = strsIndex(str + offset, substr)) {
         pos = index + offset;
         offset += index + size;
     }
@@ -402,15 +396,14 @@ int strsIndexAny(const char *str, const char *substr)
     int index = pos - buff;
     return size -2 - index;
 #else
-    size_t size = strlen(substr);
-    int maxPos = -1;
-    for (int i = 0; i < size; i++)
-    {
-        char* index = strrchr(str, substr[i]);
+    size_t size   = strlen(substr);
+    int    maxPos = -1;
+    for (int i = 0; i < size; i++) {
+        char *index = strrchr(str, substr[i]);
         if (index == NULL)
             continue;
         int pos = strsIndex(str, index);
-        maxPos = maxPos > pos ? maxPos : pos;
+        maxPos  = maxPos > pos ? maxPos : pos;
     }
     return maxPos;
 #endif
@@ -422,13 +415,13 @@ int strsIndexAny(const char *str, const char *substr)
  * @param {char} ch
  * @return {*}
  */
-void strsMap(char *str, char (*map)(char ch))
+char *strsMap(char *str, char (*map)(char ch))
 {
     size_t size = strlen(str);
-    for (int i = 0; i < size; i++)
-    {
+    for (int i = 0; i < size; i++) {
         str[i] = map(str[i]);
     }
+    return str;
 }
 
 /**
@@ -437,15 +430,14 @@ void strsMap(char *str, char (*map)(char ch))
  * @param {int} num
  * @return {*}
  */
-char* strsRepeat(const char *str, int num)
+char *strsRepeat(const char *str, int num)
 {
     if (num <= 0) {
         return NULL;
     }
     size_t size = strlen(str);
-    char *dst = strsloc(size * num + 1);
-    for (int i = 0; i < num; i++)
-    {
+    char * dst  = strsloc(size * num + 1);
+    for (int i = 0; i < num; i++) {
         strcat(dst, str);
     }
     return dst;
@@ -459,7 +451,7 @@ char* strsRepeat(const char *str, int num)
  * @param {int} num   <0时，全部替换
  * @return {*}
  */
-char * strsReplace(const char *str, const char *old, const char *new, int num)
+char *strsReplace(const char *str, const char *old, const char *new, int num)
 {
     if (num < 0) {
         return strsReplaceAll(str, old, new);
@@ -476,7 +468,7 @@ char * strsReplace(const char *str, const char *old, const char *new, int num)
         return buff;
     }
 
-    char *dst = NULL;
+    char * dst  = NULL;
     size_t diff = size3 - size2;
     if (diff > 0) {
         dst = strsloc(size1 + cnt * (diff) + 1);
@@ -484,17 +476,15 @@ char * strsReplace(const char *str, const char *old, const char *new, int num)
         dst = strsloc(size1 + 1);
     }
 
-    int pos = 0;
+    int pos   = 0;
     int index = strsIndex(str, old);
-    for (int j = 0;;j++)
-    {
+    for (int j = 0;; j++) {
         if (index >= 0 && j < num) {
             strncat(dst, str + pos, index);
             strncat(dst, new, size3);
-            pos = pos + index + size2 ;
+            pos   = pos + index + size2;
             index = strsIndex(str + pos, old);
-        } 
-        else {
+        } else {
             strcat(dst, str + pos);
             break;
         }
@@ -509,7 +499,7 @@ char * strsReplace(const char *str, const char *old, const char *new, int num)
  * @param {char} *new
  * @return {*}
  */
-char * strsReplaceAll(const char *str, const char *old, const char *new)
+char *strsReplaceAll(const char *str, const char *old, const char *new)
 {
     size_t size1 = strlen(str);
     size_t size2 = strlen(old);
@@ -522,7 +512,7 @@ char * strsReplaceAll(const char *str, const char *old, const char *new)
         return buff;
     }
 
-    char *dst = NULL;
+    char * dst  = NULL;
     size_t diff = size3 - size2;
     if (diff > 0) {
         dst = strsloc(size1 + cnt * (diff) + 1);
@@ -530,20 +520,32 @@ char * strsReplaceAll(const char *str, const char *old, const char *new)
         dst = strsloc(size1 + 1);
     }
 
-    int pos = 0;
+    int pos   = 0;
     int index = strsIndex(str, old);
-    for (;;)
-    {
+    for (;;) {
         if (index >= 0) {
             strncat(dst, str + pos, index);
             strncat(dst, new, size3);
-            pos = pos + index + size2 ;
+            pos   = pos + index + size2;
             index = strsIndex(str + pos, old);
-        } 
-        else {
+        } else {
             strcat(dst, str + pos);
             break;
         }
     }
     return dst;
+}
+
+/**
+ * @description: 删除字符串str中的所有子串substr
+ * @param {char} *str
+ * @param {char} *substr
+ * @return {*}
+ */
+char *strsRemove(char *str, const char *substr)
+{
+    char *buff = strsReplaceAll(str, substr, "");
+    memcpy(str, buff, strsLen(buff));
+    strsFree(buff);
+    return str;
 }
