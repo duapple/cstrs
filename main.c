@@ -1,10 +1,10 @@
 /*
  * @Author: duapple
  * @Date: 2021-11-17 21:42:51
- * @LastEditTime: 2021-11-20 21:29:28
+ * @LastEditTime: 2021-11-22 20:55:10
  * @LastEditors: duapple
  * @Description: Add description
- * @FilePath: \cstrs\main.c
+ * @FilePath: /strings/main.c
  * Copyright (c) 2011 duapple - All rights reserved.
  */
 #include "strings.h"
@@ -15,11 +15,9 @@ char map(char ch)
 {
     if (ch >= 'A' && ch <= 'Z') {
         return 'A' + (ch - 'A' + 13) % 26;
-    }
-    else if (ch >= 'a' && ch <= 'z') {
+    } else if (ch >= 'a' && ch <= 'z') {
         return 'a' + (ch - 'a' + 13) % 26;
-    }
-    else {
+    } else {
         return ch;
     }
 }
@@ -28,11 +26,9 @@ char map1(char ch)
 {
     if (ch >= 'A' && ch <= 'Z') {
         return 'A' + (ch - 'A' + 3) % 26;
-    }
-    else if (ch >= 'a' && ch <= 'z') {
+    } else if (ch >= 'a' && ch <= 'z') {
         return 'a' + (ch - 'a' + 3) % 26;
-    }
-    else {
+    } else {
         return ch;
     }
 }

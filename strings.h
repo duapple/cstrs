@@ -1,17 +1,39 @@
 /*
  * @Author: duapple
  * @Date: 2021-11-19 18:35:45
- * @LastEditTime: 2021-11-20 19:26:27
+ * @LastEditTime: 2021-11-22 21:13:48
  * @LastEditors: duapple
  * @Description: Add description
- * @FilePath: \cstrs\strings.h
+ * @FilePath: /strings/strings.h
  * Copyright (c) 2011 duapple - All rights reserved.
  */
 #ifndef __HJ_STRINGS_H__
 #define __HJ_STRINGS_H__
 
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <malloc.h>
+
+// #define STRS_PLAT_HOOKS
+
+#define strsFree(ptr)                                                                                                  \
+    do {                                                                                                               \
+        __strsFree(ptr);                                                                                               \
+        ptr = NULL;                                                                                                    \
+    } while (0)
+#define strsFree2(ptr, size)                                                                                           \
+    do {                                                                                                               \
+        __strsFree2(ptr, size);                                                                                        \
+        ptr = NULL;                                                                                                    \
+    } while (0)
+
+typedef struct {
+    void *(*calloc)(size_t nmemb, size_t size);
+    void (*free)(void *);
+} strs_plat_hook_t;
+
+int strsSetPlatHook(strs_plat_hook_t *hooks);
 
 bool strsIsSpace(char ch);
 bool strsIsNumber(char ch);
@@ -22,10 +44,10 @@ bool strsIsEnd(const char ch);
 
 char * strsloc(size_t size);
 char **strsloc2(int row, int col);
-void   strsFree(void *str);
-void   strsFree2(char **strList, int listSize);
 size_t strsLen(const char *str);
 int    println(const char *format, ...);
+void   __strsFree(void *str);
+void   __strsFree2(char **strList, int listSize);
 
 char * strsReverse(char *str);
 int    strsNum(const char *str);

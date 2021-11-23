@@ -120,6 +120,6 @@ clean_all:
 
 clean:
 	@echo "cleanning ..."
-	-@make -C $(MOD_DIR)/$(MOD) clean
+	# -@make -C $(MOD_DIR)/$(MOD) clean
 	-@rm -f $(target_out) $(objs)
 	@echo "clean completed."

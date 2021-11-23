@@ -1,19 +1,19 @@
 /*
  * @Author: duapple
  * @Date: 2021-11-17 21:42:40
- * @LastEditTime: 2021-11-20 21:42:11
+ * @LastEditTime: 2021-11-22 21:17:04
  * @LastEditors: duapple
  * @Description: Add description
  * 
- * @FilePath: \cstrs\strings.c
+ * @FilePath: /strings/strings.c
  * Copyright (c) 2011 duapple - All rights reserved.
  */
-#include "strings.h"
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "strings.h"
 
 #define LOG_INFO(...)  println(__VA_ARGS__)
 #define LOG_ERROR(...) println(__VA_ARGS__)
@@ -27,6 +27,26 @@
 #define CHECK_RET_PTR(rule)  CHECK_RET(rule, NULL)
 #define CHECK_RET_INT(rule)  CHECK_RET(rule, -1)
 #define CHECK_RET_BOOL(rule) CHECK_RET(rule, false)
+
+#ifdef STRS_PLAT_HOOKS
+static strs_plat_hook_t phook;
+#else
+static strs_plat_hook_t phook = {.calloc = calloc, .free = free};
+#endif
+
+/**
+ * @description: 设置平台hooks，注册calloc和free函数
+ * @param {strs_plat_hook_t} *hooks
+ * @return {*}
+ */
+int strsSetPlatHook(strs_plat_hook_t *hooks)
+{
+    CHECK_RET_INT(hooks && hooks->calloc && hooks->free);
+    phook.calloc = hooks->calloc;
+    phook.free   = hooks->free;
+    return 0;
+}
+
 /**
  * @description: 判断字符是否是空白字符
  * @param {char} ch
@@ -95,7 +115,7 @@ bool strsIsLowLetter(char ch)
  */
 char *strsloc(size_t size)
 {
-    return (char *)calloc(size, sizeof(char));
+    return (char *)phook.calloc(size, sizeof(char));
 }
 
 /**
@@ -108,9 +128,9 @@ char *strsloc(size_t size)
 char **strsloc2(int row, int col)
 {
     CHECK_RET_PTR((row > 0) && (col > 0));
-    char **strList = calloc(row, sizeof(char *));
+    char **strList = phook.calloc(row, sizeof(char *));
     for (int i = 0; i < row; i++) {
-        strList[i] = calloc(col, sizeof(char));
+        strList[i] = phook.calloc(col, sizeof(char));
     }
     return strList;
 }
@@ -176,8 +196,7 @@ int strsNum(const char *str)
             index = offset;
             index++;
             offset++;
-        }
-        else {
+        } else {
             offset++;
         }
     }
@@ -206,10 +225,29 @@ int println(const char *format, ...)
  * @param {char} *str
  * @return {*}
  */
-void strsFree(void *str)
+void __strsFree(void *str)
 {
-    free(str);
-    str = NULL;
+    if (str == NULL)
+        return;
+    phook.free(str);
+}
+
+/**
+ * @description: 释放字符串列表申请的内存空间
+ * @param {char} *
+ * @param {int} listSize
+ * @return {*}
+ */
+void __strsFree2(char **strList, int listSize)
+{
+    if (strList == NULL)
+        return;
+    for (int i = 0; i < listSize; i++) {
+        if (strList[i] == NULL)
+            continue;
+        phook.free(strList[i]);
+    }
+    phook.free(strList);
 }
 
 /**
@@ -277,7 +315,7 @@ char **strsFields(const char *str, int *listSize)
 {
     CHECK_RET_PTR(str && listSize);
     int    num      = strsNum(str);
-    char **strList  = calloc(num, sizeof(char *));
+    char **strList  = phook.calloc(num, sizeof(char *));
     int    index    = 0;
     int    offset   = 0;
     size_t buffSize = strsLen(str);
@@ -296,25 +334,10 @@ char **strsFields(const char *str, int *listSize)
             index = offset;
             index++;
             offset++;
-        }
-        else
+        } else
             offset++;
     }
     return strList;
-}
-
-/**
- * @description: 释放字符串列表申请的内存空间
- * @param {char} *
- * @param {int} listSize
- * @return {*}
- */
-void strsFree2(char **strList, int listSize)
-{
-    for (int i = 0; i < listSize; i++) {
-        strsFree(strList[i]);
-    }
-    strsFree(strList);
 }
 
 /**
@@ -543,8 +566,7 @@ char *strsReplace(const char *str, const char *old, const char *new, int num)
     size_t diff = size3 - size2;
     if (diff > 0) {
         dst = strsloc(size1 + cnt * (diff) + 1);
-    }
-    else {
+    } else {
         dst = strsloc(size1 + 1);
     }
 
@@ -556,8 +578,7 @@ char *strsReplace(const char *str, const char *old, const char *new, int num)
             strncat(dst, new, size3);
             pos   = pos + index + size2;
             index = strsIndex(str + pos, old);
-        }
-        else {
+        } else {
             strcat(dst, str + pos);
             break;
         }
@@ -590,8 +611,7 @@ char *strsReplaceAll(const char *str, const char *old, const char *new)
     size_t diff = size3 - size2;
     if (diff > 0) {
         dst = strsloc(size1 + cnt * (diff) + 1);
-    }
-    else {
+    } else {
         dst = strsloc(size1 + 1);
     }
 
@@ -603,8 +623,7 @@ char *strsReplaceAll(const char *str, const char *old, const char *new)
             strncat(dst, new, size3);
             pos   = pos + index + size2;
             index = strsIndex(str + pos, old);
-        }
-        else {
+        } else {
             strcat(dst, str + pos);
             break;
         }
@@ -658,7 +677,7 @@ char **strsSplit(const char *str, const char *sep, int *num)
         return strList;
     }
 
-    strList   = calloc(cnt + 1, sizeof(char *));
+    strList   = phook.calloc(cnt + 1, sizeof(char *));
     int pos   = 0;
     int index = strsIndex(str, sep);
     int i     = 0;
@@ -669,8 +688,7 @@ char **strsSplit(const char *str, const char *sep, int *num)
             pos   = pos + index + size2;
             index = strsIndex(str + pos, sep);
             i++;
-        }
-        else {
+        } else {
             strList[i] = strsloc(size1 - pos + 1);
             strcat(strList[i], str + pos);
             break;
@@ -712,7 +730,7 @@ char **strsSplitAfter(const char *str, const char *sep, int *num)
         return strList;
     }
 
-    strList   = calloc(cnt + 1, sizeof(char *));
+    strList   = phook.calloc(cnt + 1, sizeof(char *));
     int pos   = 0;
     int index = strsIndex(str, sep);
     int i     = 0;
@@ -723,8 +741,7 @@ char **strsSplitAfter(const char *str, const char *sep, int *num)
             pos   = pos + index + size2;
             index = strsIndex(str + pos, sep);
             i++;
-        }
-        else {
+        } else {
             strList[i] = strsloc(size1 - pos + 1);
             strcat(strList[i], str + pos);
             break;
@@ -751,18 +768,16 @@ char **strsSplitAfterN(const char *str, const char *sep, int *num)
 
     if (*num == 0) {
         return strList;
-    }
-    else if (*num == 1) {
+    } else if (*num == 1) {
         strList = strsloc2(1, size1 + 1);
         strcat(strList[0], str);
         return strList;
-    }
-    else if (*num < 0) {
+    } else if (*num < 0) {
         return strsSplitAfter(str, sep, num);
     }
 
     if (size2 == 0) {
-        strList = calloc(*num, sizeof(char *));
+        strList = phook.calloc(*num, sizeof(char *));
         for (int i = 0; i < *num - 1; i++) {
             strList[i]    = strsloc(2);
             strList[i][0] = str[i];
@@ -780,7 +795,7 @@ char **strsSplitAfterN(const char *str, const char *sep, int *num)
         return strList;
     }
 
-    strList   = calloc(cnt + 1, sizeof(char *));
+    strList   = phook.calloc(cnt + 1, sizeof(char *));
     int pos   = 0;
     int index = strsIndex(str, sep);
     int i     = 0;
@@ -792,8 +807,7 @@ char **strsSplitAfterN(const char *str, const char *sep, int *num)
             index = strsIndex(str + pos, sep);
             i++;
             j++;
-        }
-        else {
+        } else {
             break;
         }
     }
@@ -814,18 +828,16 @@ char **strsSplitN(const char *str, const char *sep, int *num)
 
     if (*num == 0) {
         return strList;
-    }
-    else if (*num == 1) {
+    } else if (*num == 1) {
         strList = strsloc2(1, size1 + 1);
         strcat(strList[0], str);
         return strList;
-    }
-    else if (*num < 0) {
+    } else if (*num < 0) {
         return strsSplit(str, sep, num);
     }
 
     if (size2 == 0) {
-        strList = calloc(*num, sizeof(char *));
+        strList = phook.calloc(*num, sizeof(char *));
         for (int i = 0; i < *num - 1; i++) {
             strList[i]    = strsloc(2);
             strList[i][0] = str[i];
@@ -843,7 +855,7 @@ char **strsSplitN(const char *str, const char *sep, int *num)
         return strList;
     }
 
-    strList   = calloc(cnt + 1, sizeof(char *));
+    strList   = phook.calloc(cnt + 1, sizeof(char *));
     int pos   = 0;
     int index = strsIndex(str, sep);
     int i     = 0;
@@ -855,8 +867,7 @@ char **strsSplitN(const char *str, const char *sep, int *num)
             index = strsIndex(str + pos, sep);
             i++;
             j++;
-        }
-        else {
+        } else {
             break;
         }
     }
