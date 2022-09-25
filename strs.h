@@ -150,6 +150,15 @@ int strs_num(const char *str);
 char *strs_dup(const char *str);
 
 /**
+ * @description: 拷贝str副本, 并释放str。
+ * @param {char} *buf 目标buf
+ * @param {char} *size buf的大小
+ * @param {char} *str 目标字符串
+ * @return {*} 拷贝完成后的buf地址, 如果str为空，将返回NULL
+ */
+char *strs_dup2(char *buf, unsigned int size, char *str);
+
+/**
  * @description: 字符串转为全大写
  * @param {char} *str
  * @return {*}

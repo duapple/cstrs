@@ -171,6 +171,14 @@ char *strs_dup(const char *str)
     return dst;
 }
 
+char *strs_dup2(char *buf, unsigned int size, char *str)
+{
+    CHECK_RET_PTR(buf && str);
+    strncpy(buf, str, size - 1);
+    free(str);
+    return buf;
+}
+
 char *strs_to_upper(char *str)
 {
     CHECK_RET_PTR(str);
