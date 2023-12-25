@@ -46,7 +46,7 @@ void test()
     println("");
 
     char str1[] = "hello world!";
-    println("[%s] size (contain \\0) is: %d", str1, chcm_strslen(str1));
+    println("[%s] size (contain \\0) is: %d", str1, strslen(str1));
     println("");
 
     char *str2 = strs_dup(str1);
@@ -254,7 +254,7 @@ void test()
     println("");
 
     str2 = strs_insert(str1, "my ", 6);
-    println("[%s] insert [%s] in pos %d: [%s]", "my ", str1, 6, str2);
+    println("[%s] insert [%s] on pos %d: [%s]", "my ", str1, 6, str2);
     strs_free(str2);
 
     println("\ntest complete!!!!!!\n");

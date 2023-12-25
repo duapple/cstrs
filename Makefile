@@ -1,96 +1,106 @@
-#------------------------------
-# 选择编译工具链
-#------------------------------
-CROSS=
-#arm-himix100-linux-
-export CC=${CROSS}gcc
-export AR=${CROSS}ar
-
-#------------------------------
-# 全局编译参数变量
-#------------------------------
-export CFLAGS_ENV=-Wall -Os -ffunction-sections -fdata-sections -std=gnu99
-#-g 
-
-#-------------------------------
-# 全局编译路径变量
-#-------------------------------
-export ROOT_DIR=$(shell pwd)
-export mk_dir=$(pwd)/build/tool
-export BUILD_DIR=$(ROOT_DIR)/build/out
-export APP_DIR=$(ROOT_DIR)/app
-export MOD_DIR=$(ROOT_DIR)/mod
-
-#------------------------------
+#-----------------------------------------------
 # 生成程序名称
-#------------------------------
-target := main
+#-----------------------------------------------
+target := test
 
-#------------------------------
-# 生成程序输出路径
-#------------------------------
-outdir := $(ROOT_DIR)
+#-----------------------------------------------
+# 选择编译工具链
+#-----------------------------------------------
+CROSS =
+export CC = ${CROSS}gcc
+export AR = ${CROSS}ar
 
-#----------------------------------------
-# 源文件路径（采用相对路径）
-#----------------------------------------
-srcdir := . src source
+#-----------------------------------------------
+# 全局编译参数变量
+#-----------------------------------------------
+export CFLAGS_ENV=-Wall -g -ffunction-sections -fdata-sections -std=c99 -fPIC 
 
-#----------------------------------------
-# 头文件路径
-#----------------------------------------
-INCLUDE := -I./include 
-INCLUDE += $(addprefix -I./, $(srcdir))
-INCLUDE += -I./mod/app
+#-----------------------------------------------
+# 全局编译路径变量
+#-----------------------------------------------
+export ROOT_DIR = $(shell pwd)
+export BUILD_DIR = build/out
+export OBJS_CACHE = $(BUILD_DIR)/objs.cache
 
-#----------------------------------------
+#-----------------------------------------------
+# 定义全局头文件路径
+# 相对路径放 INCLUDE_ENV, 绝对路径放 INCLUDE_ABS_ENV
+# （绝对路径头文件传递到子Makefile时无需转换路径）
+#-----------------------------------------------
+export INCLUDE_ENV = -I.
+
+export INCLUDE_ABS_ENV = -I$(ROOT_DIR)
+
+#-----------------------------------------------
+# 生成程序输出路径，使用相对路径
+#-----------------------------------------------
+outdir := .
+
+#-----------------------------------------------
+# 源文件路径，使用相对路径
+#-----------------------------------------------
+# src := $(foreach d, $(srcdir), $(wildcard $(d)/*.c))
+src := test.c strs.c
+
+#-----------------------------------------------
 # 编译参数
-#----------------------------------------
-CFLAGS := $(CFLAGS_ENV)
+#-----------------------------------------------
+CFLAGS := $(CFLAGS_ENV) 
 
-#------------------------------
+#-----------------------------------------------
 # 链接参数
-#------------------------------
-LDLAGS := -Wl,-Map=$(BUILD_DIR)/object.map,--cref,--gc-section
+#-----------------------------------------------
+LDFLAGS := -Wl,-Map=$(BUILD_DIR)/object.map,--cref,--gc-section -fPIC
 
-#------------------------------
-# 模块路径
-#------------------------------
-MOD := app
+#-----------------------------------------------
+# 添加子模块，使用相对路径
+#-----------------------------------------------
+MOD := 
 
-#------------------------------
-# 链接时需要的库
-#------------------------------
-LIB += $(foreach d, $(addsuffix /lib, $(addprefix $(MOD_DIR)/, $(MOD))), $(wildcard $(d)/*.a))
+#-----------------------------------------------
+# 头文件路径
+#-----------------------------------------------
+INCLUDE := $(INCLUDE_ENV) $(INCLUDE_ABS_ENV)
 
-#------------------------------
+#-----------------------------------------------
+# 链接时需要的静态库
+#-----------------------------------------------
+LIB += 
+
+#-----------------------------------------------
 # 编译前准备
-#------------------------------
-src := $(foreach d, $(srcdir), $(wildcard $(d)/*.c))
+#-----------------------------------------------
 obj := $(src:.c=.o)
 dep := $(src:.c=.d)
-build := $(BUILD_DIR)/$(subst $(ROOT_DIR)/,,$(CURDIR)/)
+build := $(BUILD_DIR)
 objs := $(addprefix $(build)/, $(obj))
 deps := $(addprefix $(build)/, $(dep))
 target_out := $(outdir)/$(target)
+$(shell mkdir -p $(BUILD_DIR))
+$(shell echo "" > $(OBJS_CACHE))
 
 all: $(target_out)
+	@echo "All completed."
 
 #-----------------------------------------------
 # 子模块编译
 #-----------------------------------------------
-module:
-	@make -C $(MOD_DIR)/$(MOD)
+module: ${MOD}
+
+${MOD}: 
+	@echo 
+	@+${MAKE} -C $@
+	@echo 
 
 #-----------------------------------------------
-# 生成静态库及依赖关系
+# 生成程序
 #-----------------------------------------------
-$(target_out):$(objs)
-	@mkdir -p $(addprefix $(build)/, $(srcdir))
+$(target_out): $(objs) module
 	@mkdir -p $(outdir)
-	$(CC) -o $(target_out) $(objs) $(INCLUDE) -Xlinker "-(" $(LIB) -Xlinker "-)" $(LDLAGS)
+	@sort -u $(OBJS_CACHE) -o $(OBJS_CACHE)
+	$(CC) -o $(target_out) $(objs) $$(cat $(OBJS_CACHE)) -Xlinker "-(" $(LIB) -Xlinker "-)" $(LDFLAGS)
 	@echo "-------------------------------------------"
-	@echo "create $(target) successs."
+	@echo "Generate $(target) successs."
 	@echo "-------------------------------------------"
 
 -include $(deps)
@@ -100,7 +110,7 @@ $(target_out):$(objs)
 #-----------------------------------------------
 $(build)/%.o: %.c
 	@mkdir -p $(dir $@)
-	$(CC) -c $(CFLAGS) $(INCLUDE) $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 #-----------------------------------------------
 # 生成.d文件的所有依赖关系
@@ -113,13 +123,28 @@ $(build)/%.d: %.c
 
 #echo "generate dependencies $(@F) ."
 
-.PHONY: clean clean_all
+.PHONY: clean clean_all ${MOD} all module $(MOD_CLEAN) $(MOD_CLEAN_ALL)
 
-clean_all:
-	-@rm -rf $(BUILD_DIR)
+#-----------------------------------------------
+# 子模块clean
+#-----------------------------------------------
+MOD_CLEAN = $(addprefix clean_, ${MOD})
+$(MOD_CLEAN):
+	@echo 
+	@+${MAKE} -C $(patsubst clean_%,%,$@) clean
+	@echo 
 
-clean:
-	@echo "cleanning ..."
-	-@make -C $(MOD_DIR)/$(MOD) clean
-	-@rm -f $(target_out) $(objs)
-	@echo "clean completed."
+MOD_CLEAN_ALL = $(addprefix clean_all_, ${MOD})
+$(MOD_CLEAN_ALL):
+	@echo 
+	@+${MAKE} -C $(patsubst clean_all_%,%,$@) clean_all
+	@echo 
+
+clean: $(MOD_CLEAN)
+	@echo "Cleanning ..."
+	-@rm -f $(target_out) $(objs) $(OBJS_CACHE)
+	@echo "Clean completed."
+
+clean_all: $(MOD_CLEAN_ALL)
+	-@rm -rf $(BUILD_DIR) $(target_out)
+	@echo "Remove build/out dir."

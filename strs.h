@@ -88,7 +88,7 @@ bool strs_is_end(char ch);
  * @param {size_t} size
  * @return {*}
  */
-char *chcm_strsloc(size_t size);
+char *strsloc(size_t size);
 
 /**
  * @description: 为字符串列表分配空间，需要strs_free2()释放
@@ -97,14 +97,14 @@ char *chcm_strsloc(size_t size);
  * @param {int} col
  * @return {*}
  */
-char **chcm_strsloc2(int row, int col);
+char **strsloc2(int row, int col);
 
 /**
  * @description: 字符串包含结束符的长度
  * @param {char} *str
  * @return {*}
  */
-size_t chcm_strslen(const char *str);
+size_t strslen(const char *str);
 
 /**
  * @description: 字符串打印函数，自动换行

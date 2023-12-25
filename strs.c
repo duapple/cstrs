@@ -63,7 +63,7 @@ bool strs_is_up_letter(char ch)
 
 bool strs_is_low_letter(char ch)
 {
-    if (!strs_is_up_letter(ch))
+    if (ch >= 'a' && ch <= 'z')
         return true;
     return false;
 }
@@ -75,12 +75,12 @@ bool strs_is_end(char ch)
     return false;
 }
 
-char *chcm_strsloc(size_t size)
+char *strsloc(size_t size)
 {
     return (char *)phook.calloc(size, sizeof(char));
 }
 
-char **chcm_strsloc2(int row, int col)
+char **strsloc2(int row, int col)
 {
     CHECK_RET_PTR((row > 0) && (col > 0));
     char **strList = phook.calloc(row, sizeof(char *));
@@ -90,7 +90,7 @@ char **chcm_strsloc2(int row, int col)
     return strList;
 }
 
-size_t chcm_strslen(const char *str)
+size_t strslen(const char *str)
 {
     CHECK_RET_INT(str);
     return strlen(str) + 1;
@@ -130,8 +130,8 @@ void __strs_free2(char **strList, int listSize)
 char *strs_reverse(char *str)
 {
     CHECK_RET_PTR(str);
-    size_t size = chcm_strslen(str);
-    char *buff = chcm_strsloc(size);
+    size_t size = strslen(str);
+    char *buff = strsloc(size);
     for (int i = 0, max = strlen(str), j = max - 1; i < max; i++, j--) {
         buff[j] = str[i];
     }
@@ -165,8 +165,8 @@ int strs_num(const char *str)
 char *strs_dup(const char *str)
 {
     CHECK_RET_PTR(str);
-    size_t size = chcm_strslen(str);
-    char *dst = chcm_strsloc(size);
+    size_t size = strslen(str);
+    char *dst = strsloc(size);
     memcpy(dst, str, size);
     return dst;
 }
@@ -272,15 +272,15 @@ char **strs_fields(const char *str, int *listSize)
     char **strList = phook.calloc(num, sizeof(char *));
     int index = 0;
     int offset = 0;
-    size_t buffSize = chcm_strslen(str);
-    char *buff = chcm_strsloc(buffSize);
+    size_t buffSize = strslen(str);
+    char *buff = strsloc(buffSize);
     *listSize = num;
     for (int i = 0, j = 0; i < buffSize && j < num; i++) {
         if (strs_is_space(str[i]) || strs_is_end(str[i])) {
             if (offset > index) {
                 sscanf(str + index, "%s", buff);
-                int strSize = chcm_strslen(buff);
-                strList[j] = chcm_strsloc(strSize);
+                int strSize = strslen(buff);
+                strList[j] = strsloc(strSize);
                 memcpy(strList[j], buff, strSize);
                 memset(buff, 0, buffSize);
                 j++;
@@ -291,6 +291,7 @@ char **strs_fields(const char *str, int *listSize)
         } else
             offset++;
     }
+    strs_free(buff);
     return strList;
 }
 
@@ -354,7 +355,7 @@ char *strs_join(const char *str1, const char *str2, const char *sep)
 {
     CHECK_RET_PTR(str1 && str2 && sep);
     size_t size = strlen(str1) + strlen(str2) + strlen(sep) + 1;
-    char *dst = chcm_strsloc(size);
+    char *dst = strsloc(size);
     strcat(dst, str1);
     strcat(dst, sep);
     strcat(dst, str2);
@@ -376,7 +377,7 @@ char *strs_join_n(const char *sep, ...)
     }
     va_end(arg);
 
-    char *dst = chcm_strsloc(size + 1 + strlen(sep) * num);
+    char *dst = strsloc(size + 1 + strlen(sep) * num);
     va_start(arg, sep);
     for (int i = 0; i < num; i++) {
         strcat(dst, va_arg(arg, char *));
@@ -456,7 +457,7 @@ char *strs_repeat(const char *str, int num)
 {
     CHECK_RET_PTR(str && (num >= 0));
     size_t size = strlen(str);
-    char *dst = chcm_strsloc(size * num + 1);
+    char *dst = strsloc(size * num + 1);
     for (int i = 0; i < num; i++) {
         strcat(dst, str);
     }
@@ -476,7 +477,7 @@ char *strs_replace(const char *str, const char *old, const char *new, int num)
 
     int cnt = strs_count(str, old);
     if (cnt <= 0) {
-        char *buff = chcm_strsloc(size1 + 1);
+        char *buff = strsloc(size1 + 1);
         memcpy(buff, str, size1);
         return buff;
     }
@@ -484,9 +485,9 @@ char *strs_replace(const char *str, const char *old, const char *new, int num)
     char *dst = NULL;
     size_t diff = size3 - size2;
     if (diff > 0) {
-        dst = chcm_strsloc(size1 + cnt * (diff) + 1);
+        dst = strsloc(size1 + cnt * (diff) + 1);
     } else {
-        dst = chcm_strsloc(size1 + 1);
+        dst = strsloc(size1 + 1);
     }
 
     int pos = 0;
@@ -514,7 +515,7 @@ char *strs_replace_all(const char *str, const char *old, const char *new)
 
     int cnt = strs_count(str, old);
     if (cnt <= 0) {
-        char *buff = chcm_strsloc(size1 + 1);
+        char *buff = strsloc(size1 + 1);
         memcpy(buff, str, size1);
         return buff;
     }
@@ -522,9 +523,9 @@ char *strs_replace_all(const char *str, const char *old, const char *new)
     char *dst = NULL;
     size_t diff = size3 - size2;
     if (diff > 0) {
-        dst = chcm_strsloc(size1 + cnt * (diff) + 1);
+        dst = strsloc(size1 + cnt * (diff) + 1);
     } else {
-        dst = chcm_strsloc(size1 + 1);
+        dst = strsloc(size1 + 1);
     }
 
     int pos = 0;
@@ -547,7 +548,7 @@ char *strs_remove(char *str, const char *substr)
 {
     CHECK_RET_PTR(str && substr);
     char *buff = strs_replace_all(str, substr, "");
-    memcpy(str, buff, chcm_strslen(buff));
+    memcpy(str, buff, strslen(buff));
     strs_free(buff);
     return str;
 }
@@ -560,7 +561,7 @@ char **strs_split(const char *str, const char *sep, int *num)
     char **strList = NULL;
 
     if (size2 == 0) {
-        strList = chcm_strsloc2(size1, 2);
+        strList = strsloc2(size1, 2);
         for (int i = 0; i < size1; i++) {
             strList[i][0] = str[i];
         }
@@ -570,7 +571,7 @@ char **strs_split(const char *str, const char *sep, int *num)
 
     int cnt = strs_count(str, sep);
     if (cnt <= 0) {
-        strList = chcm_strsloc2(1, size1 + 1);
+        strList = strsloc2(1, size1 + 1);
         memcpy(strList[0], str, size1);
         *num = 1;
         return strList;
@@ -582,13 +583,13 @@ char **strs_split(const char *str, const char *sep, int *num)
     int i = 0;
     for (;;) {
         if (index >= 0) {
-            strList[i] = chcm_strsloc(index + 1);
+            strList[i] = strsloc(index + 1);
             strncat(strList[i], str + pos, index);
             pos = pos + index + size2;
             index = strs_index(str + pos, sep);
             i++;
         } else {
-            strList[i] = chcm_strsloc(size1 - pos + 1);
+            strList[i] = strsloc(size1 - pos + 1);
             strcat(strList[i], str + pos);
             break;
         }
@@ -608,7 +609,7 @@ char **strs_split_n(const char *str, const char *sep, int *num)
     if (*num == 0) {
         return strList;
     } else if (*num == 1) {
-        strList = chcm_strsloc2(1, size1 + 1);
+        strList = strsloc2(1, size1 + 1);
         strcat(strList[0], str);
         return strList;
     } else if (*num < 0) {
@@ -618,17 +619,17 @@ char **strs_split_n(const char *str, const char *sep, int *num)
     if (size2 == 0) {
         strList = phook.calloc(*num, sizeof(char *));
         for (int i = 0; i < *num - 1; i++) {
-            strList[i] = chcm_strsloc(2);
+            strList[i] = strsloc(2);
             strList[i][0] = str[i];
         }
-        strList[*num - 1] = chcm_strsloc(size1 - (*num - 1) + 1);
+        strList[*num - 1] = strsloc(size1 - (*num - 1) + 1);
         strcat(strList[*num - 1], str + *num - 1);
         return strList;
     }
 
     int cnt = strs_count(str, sep);
     if (cnt <= 0) {
-        strList = chcm_strsloc2(1, size1 + 1);
+        strList = strsloc2(1, size1 + 1);
         memcpy(strList[0], str, size1);
         *num = 1;
         return strList;
@@ -640,7 +641,7 @@ char **strs_split_n(const char *str, const char *sep, int *num)
     int i = 0;
     for (int j = 0; j < *num - 1;) {
         if (index >= 0) {
-            strList[i] = chcm_strsloc(index + 1);
+            strList[i] = strsloc(index + 1);
             strncat(strList[i], str + pos, index);
             pos = pos + index + size2;
             index = strs_index(str + pos, sep);
@@ -650,7 +651,7 @@ char **strs_split_n(const char *str, const char *sep, int *num)
             break;
         }
     }
-    strList[i] = chcm_strsloc(size1 - pos + 1);
+    strList[i] = strsloc(size1 - pos + 1);
     strcat(strList[i], str + pos);
     if (*num > cnt + 1) {
         *num = cnt + 1;
@@ -666,7 +667,7 @@ char **strs_split_after(const char *str, const char *sep, int *num)
     char **strList = NULL;
 
     if (size2 == 0) {
-        strList = chcm_strsloc2(size1, 2);
+        strList = strsloc2(size1, 2);
         for (int i = 0; i < size1; i++) {
             strList[i][0] = str[i];
         }
@@ -676,7 +677,7 @@ char **strs_split_after(const char *str, const char *sep, int *num)
 
     int cnt = strs_count(str, sep);
     if (cnt <= 0) {
-        strList = chcm_strsloc2(1, size1 + 1);
+        strList = strsloc2(1, size1 + 1);
         memcpy(strList[0], str, size1);
         *num = 1;
         return strList;
@@ -688,13 +689,13 @@ char **strs_split_after(const char *str, const char *sep, int *num)
     int i = 0;
     for (;;) {
         if (index >= 0) {
-            strList[i] = chcm_strsloc(index + size2 + 1);
+            strList[i] = strsloc(index + size2 + 1);
             strncat(strList[i], str + pos, index + size2);
             pos = pos + index + size2;
             index = strs_index(str + pos, sep);
             i++;
         } else {
-            strList[i] = chcm_strsloc(size1 - pos + 1);
+            strList[i] = strsloc(size1 - pos + 1);
             strcat(strList[i], str + pos);
             break;
         }
@@ -714,7 +715,7 @@ char **strs_split_after_n(const char *str, const char *sep, int *num)
     if (*num == 0) {
         return strList;
     } else if (*num == 1) {
-        strList = chcm_strsloc2(1, size1 + 1);
+        strList = strsloc2(1, size1 + 1);
         strcat(strList[0], str);
         return strList;
     } else if (*num < 0) {
@@ -724,17 +725,17 @@ char **strs_split_after_n(const char *str, const char *sep, int *num)
     if (size2 == 0) {
         strList = phook.calloc(*num, sizeof(char *));
         for (int i = 0; i < *num - 1; i++) {
-            strList[i] = chcm_strsloc(2);
+            strList[i] = strsloc(2);
             strList[i][0] = str[i];
         }
-        strList[*num - 1] = chcm_strsloc(size1 - (*num - 1) + 1);
+        strList[*num - 1] = strsloc(size1 - (*num - 1) + 1);
         strcat(strList[*num - 1], str + *num - 1);
         return strList;
     }
 
     int cnt = strs_count(str, sep);
     if (cnt <= 0) {
-        strList = chcm_strsloc2(1, size1 + 1);
+        strList = strsloc2(1, size1 + 1);
         memcpy(strList[0], str, size1);
         *num = 1;
         return strList;
@@ -746,7 +747,7 @@ char **strs_split_after_n(const char *str, const char *sep, int *num)
     int i = 0;
     for (int j = 0; j < *num - 1;) {
         if (index >= 0) {
-            strList[i] = chcm_strsloc(index + size2 + 1);
+            strList[i] = strsloc(index + size2 + 1);
             strncat(strList[i], str + pos, index + size2);
             pos = pos + index + size2;
             index = strs_index(str + pos, sep);
@@ -756,7 +757,7 @@ char **strs_split_after_n(const char *str, const char *sep, int *num)
             break;
         }
     }
-    strList[i] = chcm_strsloc(size1 - pos + 1);
+    strList[i] = strsloc(size1 - pos + 1);
     strcat(strList[i], str + pos);
     if (*num > cnt + 1) {
         *num = cnt + 1;
@@ -786,7 +787,7 @@ char *strs_trim(char *str, const char *cutset)
 {
     CHECK_RET_PTR(str && cutset);
     size_t size = strlen(str);
-    char *buff = chcm_strsloc(size + 1);
+    char *buff = strsloc(size + 1);
     int startPos = 0;
     int endPos = 0;
     for (int i = 0; i < size; i++) {
@@ -813,7 +814,7 @@ char *strs_trim_func(char *str, bool (*func)(char ch))
 {
     CHECK_RET_PTR(str && func);
     size_t size = strlen(str);
-    char *buff = chcm_strsloc(size + 1);
+    char *buff = strsloc(size + 1);
     int startPos = 0;
     int endPos = 0;
     for (int i = 0; i < size; i++) {
@@ -840,7 +841,7 @@ char *strs_trim_left(char *str, const char *cutset)
 {
     CHECK_RET_PTR(str && cutset);
     size_t size = strlen(str);
-    char *buff = chcm_strsloc(size + 1);
+    char *buff = strsloc(size + 1);
     int startPos = 0;
     for (int i = 0; i < size; i++) {
         if (strchr(cutset, str[i])) {
@@ -859,7 +860,7 @@ char *strs_trim_left_func(char *str, bool (*func)(char ch))
 {
     CHECK_RET_PTR(str && func);
     size_t size = strlen(str);
-    char *buff = chcm_strsloc(size + 1);
+    char *buff = strsloc(size + 1);
     int startPos = 0;
     for (int i = 0; i < size; i++) {
         if (func(str[i])) {
@@ -878,8 +879,8 @@ char *strs_trim_prefix(char *str, const char *prefix)
 {
     CHECK_RET_PTR(str && prefix);
     if (strs_has_prefix(str, prefix)) {
-        size_t size = chcm_strslen(str);
-        char *buff = chcm_strsloc(size);
+        size_t size = strslen(str);
+        char *buff = strsloc(size);
         strcpy(buff, str + strlen(prefix));
         memcpy(str, buff, size);
         strs_free(buff);
@@ -891,7 +892,7 @@ char *strs_trim_right(char *str, const char *cutset)
 {
     CHECK_RET_PTR(str && cutset);
     size_t size = strlen(str);
-    char *buff = chcm_strsloc(size + 1);
+    char *buff = strsloc(size + 1);
     int endPos = 0;
     for (int i = size - 1; i >= 0; i--) {
         if (strchr(cutset, str[i])) {
@@ -910,7 +911,7 @@ char *strs_trim_right_func(char *str, bool (*func)(char ch))
 {
     CHECK_RET_PTR(str && func);
     size_t size = strlen(str);
-    char *buff = chcm_strsloc(size + 1);
+    char *buff = strsloc(size + 1);
     int endPos = 0;
     for (int i = size - 1; i >= 0; i--) {
         if (func(str[i])) {
@@ -950,7 +951,7 @@ char *strs_insert(const char *str, const char *substr, int pos)
 
     size_t size1 = strlen(str);
     size_t size2 = strlen(substr);
-    char *dst = chcm_strsloc(size1 + size2 + 1);
+    char *dst = strsloc(size1 + size2 + 1);
     strncpy(dst, str, pos);
     strcat(dst, substr);
     strcat(dst, str + pos);
